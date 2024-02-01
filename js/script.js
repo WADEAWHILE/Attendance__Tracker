@@ -1,35 +1,38 @@
 const eventNameText = document.getElementById("attendance__name");
 const attendeeListUL = document.getElementById("attendee-list");
+const downloadForm = document.getElementById("downloadForm");
 const submitButton = document.getElementById("submit-button");
+const fileTypeSelector = document.getElementById("fileType");
 
 let rows = [];
+let manualCounter = 0; // Counter for unique manual entry IDs
 
 function checkInput() {
     if (eventNameText.value.trim() === "") {
-      submitButton.style.display = "none";
+        downloadForm.style.display = "none";
     } else {
-      submitButton.style.display = "block";
+        downloadForm.style.display = "block";
     }
 }
 
 function load__Data__List(dataListValue) {
     attendeeListUL.innerHTML = '';
-    if(dataListValue === "manual") {
+    if (dataListValue === "manual") {
         const listItem = document.createElement('li');
         const nameTextbox = document.createElement('input');
         nameTextbox.setAttribute('type', 'text');
-        nameTextbox.setAttribute('id', 'manual-name');
         nameTextbox.setAttribute('placeholder', 'Enter attendee name');
         
         const addButton = document.createElement('button');
-        addButton.textContent = 'Enter';
+        addButton.textContent = 'Add';
         addButton.addEventListener('click', () => {
             const manualName = nameTextbox.value.trim();
             if (manualName !== "") {
                 const manualListItem = document.createElement('li');
+                const checkboxId = `checkbox-manual-${manualCounter++}`; // Unique ID for manual entries
                 manualListItem.innerHTML = `
-                    <input type="checkbox" id="checkbox-manual" />
-                    <label for="checkbox-manual">${manualName}</label>
+                    <input type="checkbox" id="${checkboxId}" />
+                    <label for="${checkboxId}">${manualName}</label>
                 `;
                 attendeeListUL.appendChild(manualListItem);
                 nameTextbox.value = ''; // Clear the textbox after adding
@@ -40,64 +43,77 @@ function load__Data__List(dataListValue) {
         listItem.appendChild(addButton);
         attendeeListUL.appendChild(listItem);
     } else {
-        fetch('data/' + dataListValue)  // Change to the path of your CSV file
-        .then(response => response.text())
+        fetch('data/' + dataListValue)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
         .then(data => {
             rows = data.split('\n');
-
-            let counter = 0;  // Initialize a counter for unique IDs
-
+            let counter = 0;
             rows.forEach(row => {
-                const attendeeName = row.split(',')[0];  // Extract attendee name
-
+                const attendeeName = row.split(',')[0];
                 const listItem = document.createElement('li');
-                const checkboxId = `checkbox-${counter}`;  // Create unique checkbox ID
+                const checkboxId = `checkbox-${counter++}`;
                 listItem.innerHTML = `
                     <input type="checkbox" id="${checkboxId}" />
                     <label for="${checkboxId}">${attendeeName}</label>
                 `;
                 attendeeListUL.appendChild(listItem);
-
-                counter++;  // Increment counter for next attendee
             });
         })
         .catch(error => console.error('Error fetching data:', error));
     }
 }
 
-// Handle submit button click
 submitButton.addEventListener("click", () => {
     const selectedAttendees = [];
-
-    // Gather selected attendees from the generated checkboxes
     rows.forEach((row, index) => {
         const checkbox = document.getElementById(`checkbox-${index}`);
-        if (checkbox.checked) {
+        if (checkbox && checkbox.checked) {
             selectedAttendees.push(row);
         }
     });
 
-    // Gather manually entered attendees from the manual checkboxes
-    const manualCheckboxes = document.querySelectorAll('#checkbox-manual');
-    manualCheckboxes.forEach(checkbox => {
+    // Gather manually entered attendees
+    document.querySelectorAll('[id^="checkbox-manual-"]').forEach(checkbox => {
         if (checkbox.checked) {
             selectedAttendees.push(checkbox.nextElementSibling.textContent);
         }
     });
 
-    // Prepare data for download
-    const pageTitle = document.querySelector('h1').textContent + ' ' + document.querySelector('p').textContent + ' ' + document.getElementById('attendance__name').value + ':';
-    const dataToDownload = pageTitle + '\n\n' + selectedAttendees.join('\n');
+    const fileType = fileTypeSelector.value;
+    const headerTitle = `Attendance for ${eventNameText.value}`;
+    const pageTitle = `${document.querySelector('h1').textContent} ${document.querySelector('p').textContent} ${eventNameText.value}`;
+    let dataToDownload = '';
+    let fileName = `${pageTitle}.${fileType}`;
 
-    // Create and trigger download
-    const downloadLink = document.createElement('a');
-    downloadLink.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(dataToDownload));
-    downloadLink.setAttribute('download', pageTitle + '.txt');
-    downloadLink.style.display = 'none';
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+    if (fileType === 'txt') {
+        dataToDownload = headerTitle + '\nName\n' + selectedAttendees.join('\n');
+        triggerDownload('data:text/plain;charset=utf-8,' + encodeURIComponent(dataToDownload), fileName);
+    } else if (fileType === 'csv') {
+        const csvHeader = headerTitle + '\nName';
+        const csvRows = selectedAttendees.map(attendee => `"${attendee}"`).join('\n');
+        dataToDownload = `${csvHeader}\n${csvRows}`;
+        triggerDownload('data:text/csv;charset=utf-8,' + encodeURIComponent(dataToDownload), fileName);
+    } else if (fileType === 'xlsx') {
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.aoa_to_sheet([[headerTitle], ['Name'], ...selectedAttendees.map(attendee => [attendee.split(',')[0]])]);
+        XLSX.utils.book_append_sheet(workbook, worksheet, headerTitle);
+        XLSX.writeFile(workbook, fileName); // This automatically triggers the download
+    }
 
     console.log("Attendees:", selectedAttendees);
     alert("Attendance Downloaded!");
 });
+
+function triggerDownload(url, fileName) {
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.setAttribute('download', fileName);
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
