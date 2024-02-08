@@ -54,7 +54,7 @@
             <button type="submit" id="submit-button">Download Attendance</button>
         </form>
 
-        <div id="developer">&copy; 2023 WADEAWHILE</div>
+        <div id="developer"><a href="https://wadeawhile.github.io" target="_blank">&copy; 2023 WADEAWHILE</a></div>
     </div>
     <script src="js/script.js"></script>
 </body>
