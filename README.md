@@ -1,5 +1,5 @@
 # Attendance Tracker
-Simple application that was created to provide a flexible solution to track the attendance of attendees without the need for a list of attendees.
+A simple application that was created to provide a flexible solution to track the attendance of events or groups, without the need for a list of attendees.
 
 You can either have attendees enter their own name and check it off, have staff complete this process on behalf of the attendee, or upload your own csv file (template supplied in-app) to populate a set attendee list. The choice is yours.
 
