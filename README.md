@@ -3,7 +3,7 @@ Simple application that was created to provide a flexible solution to track the 
 
 You can either have attendees enter their own name and check it off, have staff complete this process on behalf of the attendee, or upload your own csv file (template supplied in-app) to populate a set attendee list. The choice is yours.
 
-Once your list is complete, you can export it as a CSV, XLSX, or TXT filetype, the choice is yours.
+Once your list is complete, and you've entered a name for your list, a download button will appear at the bottom for you to export it as a CSV, XLSX, or TXT filetype, the choice is yours.
 
 With the option to host this app on your own webserver or simply run it from your desktop, it adds to the flexibility of this solution.
 <p align="center">
